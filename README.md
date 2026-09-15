@@ -11,6 +11,16 @@
 
 ---
 
+## Preview
+
+<p align="center">
+  <img alt="dsh-astra full-screen starfield preview" src="docs/astra-demo.png">
+</p>
+
+Full-screen rendering is selected automatically when the host exposes an ambient
+rendering surface. Hosts with a limited status area use the available height
+instead of assuming a fixed three-row layout.
+
 ## Quick start
 
 ```sh
@@ -24,7 +34,7 @@ dsh --profile dsh-tui
 # or: dst
 ```
 
-The starfield appears as a 3-row shimmer above the prompt on dark terminals.
+The starfield appears in the largest safe rendering area available on dark terminals.
 
 ---
 
