@@ -1,0 +1,7 @@
+- insert:
+    - id: dsh-astra
+      name: 'dsh-astra'
+      config:
+        enabled: true
+        fps: 10
+        density: sparse
