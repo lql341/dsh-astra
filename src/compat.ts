@@ -66,10 +66,10 @@ export function safeFps(configuredFps: number, caps: TerminalCapabilities): numb
 
 export function starGlyphs(depth: TerminalColorDepth): string[] {
   switch (depth) {
-    case 'truecolor': return ['·','✦','⋆','˚','✧','⭑','·','⋅','✶','⁕']
-    case '256': return ['·','·','·','⋅','·','·','·','⋅','·','·']
-    case '16': return ['.','.','.','.','.','.','.','.','.','.']
-    default: return ['.']
+    case 'truecolor': return ['·','•','✦','★','⋆','˚','✧','⭑','☾','☽','☼','✶','⁕','◎','◉','⊛','✺']
+    case '256': return ['·','•','✦','★','⋆','˚','✧','☾','☼','◎','⊛']
+    case '16': return ['.','*','+','o','O','@']
+    default: return ['.','*','o']
   }
 }
 

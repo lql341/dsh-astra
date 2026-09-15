@@ -10,7 +10,6 @@ import { setGlyphs, seedRandom } from './starfield.js'
 import { initialState, reduceState, type StateFrame, type SessionEvent } from './states.js'
 import { createStatusViewComponent } from './renderer.js'
 import { registerAstraCommands } from './commands.js'
-import { registerSettings } from './settings.js'
 
 export const name = 'dsh-astra'
 
@@ -19,7 +18,9 @@ export type Config = AstraConfig
 export const Config: Schemastery<Config> = z.object({
   enabled: z.boolean().default(true),
   fps: z.number().min(4).max(20).default(10),
-  density: z.union(['sparse', 'normal', 'dense']).default('sparse'),
+  density: z.union(['sparse', 'normal', 'dense']).default('normal'),
+  intensity: z.union(['off', 'spark', 'luna', 'terra', 'sol', 'astra']).default('astra'),
+  color: z.union(['white', 'deepseek']).default('white'),
 })
 
 interface PluginState {
@@ -37,7 +38,9 @@ export function apply(ctx: Context, config: Config = {}): void {
   const resolved: AstraConfig = {
     enabled: config.enabled ?? true,
     fps: config.fps ?? 10,
-    density: config.density ?? 'sparse',
+    density: config.density ?? 'normal',
+    intensity: config.intensity ?? 'astra',
+    color: config.color ?? 'white',
   }
 
   const caps = probeCapabilities()
@@ -95,6 +98,8 @@ export function apply(ctx: Context, config: Config = {}): void {
           React: props.React, ui: props.ui,
           stateFrame: state.stateFrame,
           density: state.config.density,
+          intensity: state.config.intensity,
+          color: state.config.color,
           fps: state.effectiveFps,
           colorDepth: state.caps.colorDepth,
           dark: state.caps.isDarkTheme,
@@ -103,16 +108,10 @@ export function apply(ctx: Context, config: Config = {}): void {
     }, ctx) ?? undefined
   }
 
-  registerAstraCommands(ctx, () => state.config, (enabled) => {
-    state.config = { ...state.config, enabled }
-    state.mode = resolveAstraMode(enabled, state.caps)
-    ctx.logger.info(`dsh-astra: ${enabled ? 'enabled' : 'disabled'} via /astra`)
-  })
-
-  registerSettings(ctx, () => state.config, (patch) => {
+  registerAstraCommands(ctx, () => state.config, (patch) => {
     state.config = { ...state.config, ...patch }
-    state.mode = resolveAstraMode(state.config.enabled, state.caps)
-    state.effectiveFps = safeFps(state.config.fps, state.caps)
+    state.mode = resolveAstraMode(state.config.enabled && state.config.intensity !== 'off', state.caps)
+    ctx.logger.info(`dsh-astra: ${state.config.intensity === 'off' ? 'disabled' : 'enabled'} via /astra`)
   })
 
   ctx.effect(() => () => {

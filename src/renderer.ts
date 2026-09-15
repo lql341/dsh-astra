@@ -2,7 +2,7 @@
  * Ink/React starfield renderer component.
  * @module dsh-astra/renderer
  */
-import type { Star, StarDensity, Viewport, TerminalColorDepth } from './types.js'
+import type { Star, StarDensity, Viewport, TerminalColorDepth, AstraIntensity, AstraColor } from './types.js'
 import type { StateFrame } from './states.js'
 import {
   generateStars, twinkleBrightness, frameBrightness,
@@ -22,6 +22,8 @@ export interface RendererProps {
   ui: HostUiKit
   stateFrame: StateFrame
   density: StarDensity
+  intensity: AstraIntensity
+  color: AstraColor
   fps: number
   colorDepth: TerminalColorDepth
   dark: boolean
@@ -31,7 +33,10 @@ export interface RendererProps {
 
 export function createStarfieldComponent() {
   return function StarfieldBackground(props: RendererProps): React.ReactNode {
-    const { React, ui, stateFrame, density, fps, colorDepth, dark, compact, maxRows } = props
+    const { React, ui, stateFrame, density, intensity, color, fps, colorDepth, dark, compact, maxRows } = props
+    const intensityScale: Record<AstraIntensity, number> = {
+      off: 0, spark: 0.95, luna: 1.2, terra: 1.5, sol: 1.85, astra: 2.2,
+    }
     const { columns, rows: termRows } = ui.useTerminalSize()
     const intervalMs = Math.round(1000 / Math.max(4, Math.min(20, fps)))
 
@@ -83,15 +88,17 @@ export function createStarfieldComponent() {
         const pad = col - lastCol
         if (pad > 0) line += ' '.repeat(pad)
         else if (pad < 0) continue
-        const b = frameBrightness(star, elapsed, 0.06)
-        line += b > 0 ? ansiForStar(b, star.tint, colorDepth, star.glyph) : ' '
+        const b = frameBrightness(star, elapsed, 0.03) * intensityScale[intensity]
+        const tint = color === 'deepseek' ? [70, 120, 255] as [number, number, number]
+          : color === 'gold' ? [255, 190, 65] as [number, number, number] : star.tint
+        line += b > 0 ? ansiForStar(b, tint, colorDepth, star.glyph) : ' '
         lastCol = col + 1
       }
       if (lastCol < viewport.columns) line += ' '.repeat(viewport.columns - lastCol)
       lines.push(line)
     }
 
-    if (!dark) return null
+    if (!dark || intensity === 'off') return null
 
     return React.createElement(
       ui.Box,
@@ -114,6 +121,8 @@ export function createStatusViewComponent() {
     }
     stateFrame: StateFrame
     density: StarDensity
+    intensity: AstraIntensity
+    color: AstraColor
     fps: number
     colorDepth: TerminalColorDepth
     dark: boolean

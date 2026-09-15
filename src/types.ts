@@ -6,6 +6,8 @@ export type AgentState =
   | 'idle' | 'thinking' | 'working' | 'completed' | 'interrupted' | 'error'
 
 export type StarDensity = 'sparse' | 'normal' | 'dense'
+export type AstraIntensity = 'off' | 'spark' | 'luna' | 'terra' | 'sol' | 'astra'
+export type AstraColor = 'white' | 'deepseek' | 'gold'
 
 export interface Star {
   x: number; y: number
@@ -20,6 +22,8 @@ export interface AstraConfig {
   enabled: boolean
   fps: number
   density: StarDensity
+  intensity: AstraIntensity
+  color: AstraColor
 }
 
 export type TerminalColorDepth = 'truecolor' | '256' | '16' | 'none'

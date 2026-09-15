@@ -1,7 +1,12 @@
 - insert:
     - id: dsh-astra
       name: 'dsh-astra'
+      inject:
+        - commands
+        - tuiStatus
       config:
         enabled: true
         fps: 10
-        density: sparse
+        density: normal
+        intensity: astra
+        color: white

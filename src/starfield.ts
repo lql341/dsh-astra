@@ -4,13 +4,13 @@
  */
 import type { Star, StarDensity, Viewport } from './types.js'
 
-const MAX_STARS = 200
+const MAX_STARS = 320
 
 const DENSITY_FACTORS: Record<StarDensity, number> = {
-  sparse: 2.0, normal: 4.5, dense: 8.0,
+  sparse: 3.5, normal: 7.5, dense: 12.0,
 }
 
-let GLYPHS: string[] = ['·','✦','⋆','˚','✧','⭑','·','⋅','✶','⁕']
+let GLYPHS: string[] = ['·','•','✦','★','⋆','˚','✧','⭑','☾','☽','☼','✶','⁕','◎','◉','⊛','✺']
 
 const TINT_POOL: [number, number, number][] = [
   [180,200,255], [200,200,255], [220,210,255], [160,180,240], [200,220,255],

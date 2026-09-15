@@ -82,16 +82,9 @@ fi
 
 # Compile TypeScript → lib/
 npx tsc -p tsconfig.json 2>/dev/null || {
-  # TypeScript might not be installed; skip build if tsc not available
-  info "TypeScript compiler not available; using raw src/ (dev mode)"
-  # In dev mode, ensure dsh resolves to the raw source
-  mkdir -p lib
-  # Create a simple redirect
-  cat > lib/index.js << 'LIBJS'
-// dsh-astra dev bridge — re-exports the TypeScript source entry.
-// Production installs should run `pnpm build` first.
-export * from '../src/index.js';
-LIBJS
+  err "TypeScript build failed; refusing to install an incomplete plugin"
+  err "Install dependencies with pnpm/npm, then run: pnpm build"
+  exit 1
 }
 
 ok "Build complete"
