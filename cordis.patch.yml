@@ -10,3 +10,4 @@
         density: normal
         intensity: astra
         color: white
+        layout: auto

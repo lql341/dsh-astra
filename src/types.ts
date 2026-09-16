@@ -7,6 +7,7 @@ export type AgentState =
 
 export type StarDensity = 'sparse' | 'normal' | 'dense'
 export type AstraIntensity = 'off' | 'spark' | 'luna' | 'terra' | 'sol' | 'astra'
+export type AstraLayout = 'auto' | 'full' | 'compact'
 export type AstraColor = 'white' | 'deepseek' | 'gold'
 
 export interface Star {
@@ -23,6 +24,7 @@ export interface AstraConfig {
   fps: number
   density: StarDensity
   intensity: AstraIntensity
+  layout: AstraLayout
   color: AstraColor
 }
 

@@ -11,7 +11,10 @@ import type { SessionEvent } from '../src/states.js'
 import {
   detectColorDepth, resolveAstraMode, safeFps, starGlyphs, ansiForStar,
 } from '../src/compat.js'
+import { apply } from '../src/index.js'
+import type { Context } from '@deepseek-ai/cordis'
 import type { Star, StarDensity, Viewport, TerminalColorDepth, TerminalCapabilities } from '../src/types.js'
+import { selectRenderSurface } from '../src/surface.js'
 
 const V30x20: Viewport = { columns: 30, rows: 20 }
 
@@ -128,9 +131,9 @@ describe('reduceState', () => {
 
 describe('burstMagnitude', () => {
   it('decays over time', () => {
-    const f = { state: 'completed' as const, completedAt: 0 }
-    assert.equal(burstMagnitude(f, 0, 2.5, 1500), 2.5)
-    assert.ok(burstMagnitude(f, 1500, 2.5, 1500) < 1.05)
+    const f = { state: 'completed' as const, completedAt: 1_000 }
+    assert.equal(burstMagnitude(f, 1_000, 2.5, 1500), 2.5)
+    assert.ok(burstMagnitude(f, 2_500, 2.5, 1500) < 1.05)
   })
   it('returns 1.0 for non-completed', () => {
     assert.equal(burstMagnitude({ state: 'idle', completedAt: 0 }, 0), 1.0)
@@ -153,5 +156,74 @@ describe('ansiForStar', () => {
     assert.ok(ansiForStar(0.5, [200,200,255], '256', '·').includes('\x1b[38;5;'))
     assert.ok(ansiForStar(0.9, [200,200,255], '16', '.').includes('\x1b[1m'))
     assert.equal(ansiForStar(0.5, [200,200,255], 'none', '.'), '.')
+  })
+})
+
+describe('selectRenderSurface', () => {
+  it('prefers ambient in auto mode', () => {
+    assert.deepEqual(
+      selectRenderSurface('auto', { ambient: true, statusMaxRows: 3 }),
+      { kind: 'ambient' },
+    )
+  })
+
+  it('falls back to the bounded surface when ambient is unavailable', () => {
+    assert.deepEqual(
+      selectRenderSurface('auto', { ambient: false, statusMaxRows: 3 }),
+      { kind: 'bounded', rows: 3 },
+    )
+    assert.deepEqual(
+      selectRenderSurface('full', { ambient: false, statusMaxRows: 2 }),
+      { kind: 'bounded', rows: 2 },
+    )
+  })
+
+  it('keeps compact mode on the bounded surface', () => {
+    assert.deepEqual(
+      selectRenderSurface('compact', { ambient: true, statusMaxRows: 1 }),
+      { kind: 'bounded', rows: 1 },
+    )
+  })
+
+  it('reports an unavailable host', () => {
+    assert.equal(selectRenderSurface('auto', { ambient: false }).kind, 'unavailable')
+  })
+})
+
+describe('dsh-TUI ambient integration', () => {
+  it('prefers registerAmbient and releases it on teardown', () => {
+    const previous = process.env.DSH_TUI_ASTRA_EFFECT
+    process.env.DSH_TUI_ASTRA_EFFECT = 'on'
+    let ambientRegistrations = 0
+    let boundedRegistrations = 0
+    let ambientReleases = 0
+    let teardown: (() => void) | undefined
+    const status = {
+      registerAmbient: () => {
+        ambientRegistrations++
+        return () => { ambientReleases++ }
+      },
+      registerView: () => {
+        boundedRegistrations++
+        return () => {}
+      },
+    }
+    const fakeContext = {
+      logger: { info: () => {}, warn: () => {} },
+      on: () => {},
+      get: (name: string) => name === 'tuiStatus' ? status : undefined,
+      effect: (factory: () => () => void) => { teardown = factory() },
+    } as unknown as Context
+
+    try {
+      apply(fakeContext, { layout: 'auto' })
+      assert.equal(ambientRegistrations, 1)
+      assert.equal(boundedRegistrations, 0)
+      teardown?.()
+      assert.equal(ambientReleases, 1)
+    } finally {
+      if (previous === undefined) delete process.env.DSH_TUI_ASTRA_EFFECT
+      else process.env.DSH_TUI_ASTRA_EFFECT = previous
+    }
   })
 })
