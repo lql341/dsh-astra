@@ -56,9 +56,10 @@ The starfield appears as a three-row status view on supported dark TTY terminals
 | `/astra on` | Enable starfield |
 | `/astra off` | Disable starfield |
 | `/astra toggle` | Toggle on/off |
-| `/astra status` | Show config: density, fps, env |
+| `/astra status` | Show config: density, fps, layout, env |
 | `/astra spark\|luna\|terra\|sol\|astra` | Select intensity |
 | `/astra color white\|deepseek\|gold` | Select colour in memory |
+| `/astra layout auto|full|compact` | Switch render surface while running |
 
 Command changes affect the running process only and are not persisted. Although
 `src/settings.ts` contains a settings prototype, it is not registered by the
@@ -139,8 +140,6 @@ ambient surface when the host explicitly provides one, otherwise it calls
   and proposed upstream in [Discussion #905](https://github.com/ccch1mneyyy/dsh-TUI/discussions/905).
 - `/settings` is not wired into `apply()`.
 - Slash-command changes are not persisted.
-- If the plugin starts disabled, no view is registered; `/astra on` cannot add
-  that missing view without a restart.
 - Thinking and working are state-dependent poses, not accumulating movement.
 - Effective fps is calculated at startup; runtime fps changes are not exposed.
 

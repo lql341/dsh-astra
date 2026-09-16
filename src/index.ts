@@ -5,7 +5,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type React from 'react'
-import type { AstraConfig, TerminalCapabilities } from './types.js'
+import type { AstraConfig, AstraLayout, TerminalCapabilities } from './types.js'
 import { probeCapabilities, resolveAstraMode, safeFps, starGlyphs } from './compat.js'
 import { setGlyphs, seedRandom } from './starfield.js'
 import { initialState, reduceState, type StateFrame, type SessionEvent } from './states.js'
@@ -92,20 +92,26 @@ export function apply(ctx: Context, config: Config = {}): void {
   let statusDisposer: (() => void) | undefined
   let ambientDisposer: (() => void) | undefined
 
-  if (mode === 'on' && statusRuntime !== undefined) {
-    const surface = selectRenderSurface(resolved.layout, {
+  const renderProps = (props: ViewProps) => ({
+    React: props.React, ui: props.ui,
+    stateFrame: state.stateFrame,
+    density: state.config.density,
+    intensity: state.config.intensity,
+    color: state.config.color,
+    fps: state.effectiveFps,
+    colorDepth: state.caps.colorDepth,
+    dark: state.caps.isDarkTheme,
+  })
+
+  const registerSurface = (): void => {
+    statusDisposer?.()
+    ambientDisposer?.()
+    statusDisposer = undefined
+    ambientDisposer = undefined
+    if (state.mode !== 'on' || statusRuntime === undefined) return
+    const surface = selectRenderSurface(state.config.layout, {
       ambient: typeof statusRuntime.registerAmbient === 'function',
       statusMaxRows: typeof statusRuntime.registerView === 'function' ? 3 : undefined,
-    })
-    const renderProps = (props: ViewProps) => ({
-      React: props.React, ui: props.ui,
-      stateFrame: state.stateFrame,
-      density: state.config.density,
-      intensity: state.config.intensity,
-      color: state.config.color,
-      fps: state.effectiveFps,
-      colorDepth: state.caps.colorDepth,
-      dark: state.caps.isDarkTheme,
     })
     if (surface.kind === 'ambient' && statusRuntime.registerAmbient !== undefined) {
       const Starfield = createStarfieldComponent()
@@ -121,14 +127,20 @@ export function apply(ctx: Context, config: Config = {}): void {
         component: (props) => StatusView(renderProps(props)),
       }, ctx) ?? undefined
     } else if (surface.kind === 'unavailable') {
-      ctx.logger.warn(`dsh-astra: inactive (${surface.reason})`)
+      ctx.logger.warn('dsh-astra: inactive (' + surface.reason + ')')
     }
   }
 
+  registerSurface()
+
   registerAstraCommands(ctx, () => state.config, (patch) => {
+    const previousMode = state.mode
     state.config = { ...state.config, ...patch }
     state.mode = resolveAstraMode(state.config.enabled && state.config.intensity !== 'off', state.caps)
+    if (state.mode !== previousMode || patch.layout !== undefined) registerSurface()
     ctx.logger.info(`dsh-astra: ${state.config.intensity === 'off' ? 'disabled' : 'enabled'} via /astra`)
+  }, (patch) => {
+    if (patch.layout !== undefined) state.config.layout = patch.layout as AstraLayout
   })
 
   ctx.effect(() => () => {

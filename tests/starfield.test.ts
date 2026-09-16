@@ -191,12 +191,13 @@ describe('selectRenderSurface', () => {
 })
 
 describe('dsh-TUI ambient integration', () => {
-  it('prefers registerAmbient and releases it on teardown', () => {
+  it('prefers registerAmbient and releases it on teardown', async () => {
     const previous = process.env.DSH_TUI_ASTRA_EFFECT
     process.env.DSH_TUI_ASTRA_EFFECT = 'on'
     let ambientRegistrations = 0
     let boundedRegistrations = 0
     let ambientReleases = 0
+    let commandHandler: ((invocation: { rawInput?: string }) => Promise<{ kind: 'success'; text: string }>) | undefined
     let teardown: (() => void) | undefined
     const status = {
       registerAmbient: () => {
@@ -211,7 +212,9 @@ describe('dsh-TUI ambient integration', () => {
     const fakeContext = {
       logger: { info: () => {}, warn: () => {} },
       on: () => {},
-      get: (name: string) => name === 'tuiStatus' ? status : undefined,
+      get: (name: string) => name === 'tuiStatus' ? status
+        : name === 'commands' ? { register: (def: { handler: typeof commandHandler }) => { commandHandler = def.handler; return () => {} } }
+        : undefined,
       effect: (factory: () => () => void) => { teardown = factory() },
     } as unknown as Context
 
@@ -219,8 +222,16 @@ describe('dsh-TUI ambient integration', () => {
       apply(fakeContext, { layout: 'auto' })
       assert.equal(ambientRegistrations, 1)
       assert.equal(boundedRegistrations, 0)
-      teardown?.()
+      const compact = await commandHandler?.({ rawInput: 'layout compact' })
+      assert.equal(compact?.text, '✨ Astra layout: compact')
       assert.equal(ambientReleases, 1)
+      assert.equal(boundedRegistrations, 1)
+      const full = await commandHandler?.({ rawInput: 'layout full' })
+      assert.equal(full?.text, '✨ Astra layout: full')
+      assert.equal(ambientRegistrations, 2)
+      assert.equal(boundedRegistrations, 1)
+      teardown?.()
+      assert.equal(ambientReleases, 2)
     } finally {
       if (previous === undefined) delete process.env.DSH_TUI_ASTRA_EFFECT
       else process.env.DSH_TUI_ASTRA_EFFECT = previous
